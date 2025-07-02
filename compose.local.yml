@@ -1,0 +1,72 @@
+version: "3.8"
+# @TODO ヘルスチェック、Nginxリバースプロキシ、volumes、networks等は後ほど
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - GIN_MODE=release
+    restart: unless-stopped
+    # ヘルスチェックを無効化
+    # healthcheck:
+    #   test:
+    #     [
+    #       "CMD",
+    #       "wget",
+    #       "--quiet",
+    #       "--tries=1",
+    #       "--spider",
+    #       "http://localhost:8080/health",
+    #     ]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 40s
+
+  # 開発用データベース（オプション）
+
+  # MySQL データベース
+  mysql:
+    image: mysql:8.4.0
+    ports:
+      - "3326:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    # volumes:
+    #   - mysql_data:/var/lib/mysql
+    # - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    # command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-ppassword",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    # networks:
+    #   - app-network
+
+  # # オプション: Nginxリバースプロキシ
+  # nginx:
+  #   image: nginx:alpine
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #   depends_on:
+  #     - gin-app
+  #   restart: unless-stopped
